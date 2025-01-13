@@ -1,4 +1,4 @@
-# Web Audio Projector
+# SpeakEasy
 
 A real-time web-based audio streaming application that allows users to capture microphone input and project it through speakers. Built with modern web technologies and featuring Bluetooth connectivity options.
 

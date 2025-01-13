@@ -1,0 +1,96 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Audio Projector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white font-roboto">
+    <header class="bg-gray-800 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Web Audio Projector</h1>
+        </div>
+    </header>
+    <main class="container mx-auto p-4">
+        <section class="text-center my-8">
+            <h2 class="text-4xl font-bold mb-4">Microphone to Speaker</h2>
+            <p class="text-lg mb-8">Capture audio from your microphone and play it back through your speakers in real-time.</p>
+            <button id="startButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Start</button>
+            <button id="stopButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Stop</button>
+            <button id="connectBluetoothButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Connect Bluetooth</button>
+        </section>
+    </main>
+    <footer class="bg-gray-800 p-4 mt-8">
+        <div class="container mx-auto text-center">
+            <p>© 2023 Web Audio Projector. All rights reserved.</p>
+        </div>
+    </footer>
+    <script>
+        let audioContext;
+        let mediaStreamSource;
+        let mediaStream;
+        let audioProcessor;
+
+        document.getElementById('startButton').addEventListener('click', async () => {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaStreamSource = audioContext.createMediaStreamSource(mediaStream);
+                audioProcessor = audioContext.createScriptProcessor(1024, 1, 1);
+
+                audioProcessor.onaudioprocess = (event) => {
+                    const inputData = event.inputBuffer.getChannelData(0);
+                    const outputData = event.outputBuffer.getChannelData(0);
+                    for (let i = 0; i < inputData.length; i++) {
+                        outputData[i] = inputData[i];
+                    }
+                };
+
+                mediaStreamSource.connect(audioProcessor);
+                audioProcessor.connect(audioContext.destination);
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+            }
+        });
+
+        document.getElementById('stopButton').addEventListener('click', () => {
+            if (audioProcessor) {
+                audioProcessor.disconnect();
+                audioProcessor = null;
+            }
+            if (mediaStreamSource) {
+                mediaStreamSource.disconnect();
+                mediaStreamSource = null;
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        });
+
+        document.getElementById('connectBluetoothButton').addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000110b-0000-1000-8000-00805f9b34fb'] // Audio Sink service UUID
+                });
+                console.log('Connected to Bluetooth device:', device);
+
+                const server = await device.gatt.connect();
+                console.log('GATT server connected:', server);
+
+                // Implement further Bluetooth connection logic here
+                // For example, you can discover services and characteristics
+            } catch (error) {
+                console.error('Error connecting to Bluetooth device:', error);
+            }
+        });
+    </script>
+</body>
+</html>
